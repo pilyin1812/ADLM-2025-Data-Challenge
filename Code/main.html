@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Clinical Lab SOP RAG</title>
+<style>
+  :root{
+    --r:18px;
+    --panel-bg: rgba(28,28,30,.75);
+    --blur: blur(20px);
+    --ease: cubic-bezier(.19,1,.22,1);
+    --text:#fff; --muted:rgba(255,255,255,.72); --accent:#0a84ff;
+
+    --top-safe: 24px;           /* distance from top when docked */
+    --panelHeight: 0px;         /* set in JS */
+    --content-width: min(720px, 92vw);
+  }
+
+  *{ box-sizing:border-box }
+  html,body{
+    height:100%;
+    margin:0;
+    background:#1c1c1e;
+    color:var(--text);
+    font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+
+  .stage{
+    position:relative;
+    min-height:100vh;
+    width:100%;
+    overflow:visible; /* allow page scrolling */
+  }
+  /* collapse stage once panel docks so content starts directly beneath it */
+  .stage.collapsed{
+    min-height:0;
+  }
+
+  /* Floating panel: centered first; fixed near top after docking */
+  .panel{
+    position:absolute;
+    left:50%; top:50%;
+    transform: translate(-50%,-50%);
+    width: var(--content-width);
+    background:var(--panel-bg);
+    backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:var(--r);
+    box-shadow:0 18px 60px rgba(0,0,0,.45);
+    padding:20px; z-index:5;
+    transition: top .7s var(--ease), transform .7s var(--ease), box-shadow .35s var(--ease);
+  }
+  .panel.docked{
+    position:fixed;
+    top:var(--top-safe);
+    left:50%;
+    transform: translateX(-50%);
+  }
+
+  /* Subtle glows */
+  @keyframes bluePulse{0%,100%{box-shadow:0 18px 60px rgba(0,0,0,.45),0 0 0 rgba(10,132,255,.22)}50%{box-shadow:0 18px 60px rgba(0,0,0,.45),0 0 28px rgba(10,132,255,.22)}}
+  @keyframes redPulse {0%,100%{box-shadow:0 18px 60px rgba(0,0,0,.45),0 0 0 rgba(255,59,48,.22)}50%{box-shadow:0 18px 60px rgba(0,0,0,.45),0 0 28px rgba(255,59,48,.22)}}
+  .panel.responding{ animation: bluePulse 3s ease-in-out infinite }
+  .panel.error{ animation: redPulse 1.6s ease-in-out 1 }
+
+  .input-wrap{ position:relative; cursor:text }
+  textarea{
+    width:100%; border:none; outline:none; border-radius:var(--r);
+    background:rgba(255,255,255,.08); color:var(--text);
+    padding:14px 48px 14px 16px; font:16px/1.45 inherit;
+    min-height:80px; max-height:220px; resize:none; overflow-y:hidden;
+    transition: height .25s var(--ease);
+  }
+  textarea.show-scroll{ overflow-y:auto }
+  textarea::-webkit-scrollbar{ width:8px }
+  textarea::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.28); border-radius:4px }
+
+  .submit{
+    position:absolute; right:8px; bottom:8px; width:34px; height:34px;
+    border-radius:50%; border:none; background:#fff; color:#000; cursor:pointer;
+    display:grid; place-items:center; opacity:0; transform:scale(.9);
+    transition: opacity .18s var(--ease), transform .12s var(--ease), box-shadow .18s var(--ease);
+  }
+  .submit.visible{ opacity:1; transform:scale(1) }
+  .submit:hover{ box-shadow:0 6px 16px rgba(0,0,0,.25) }
+  .submit:active{ transform:scale(.95) }
+  .submit svg{ width:14px; height:14px; stroke:var(--accent); stroke-width:3; fill:none }
+
+  /* The answer column lives in NORMAL FLOW and is always pushed right under the docked panel */
+  .content{
+    width: var(--content-width);
+    margin: calc(var(--top-safe) + var(--panelHeight) + 14px) auto 56px; /* anchors right below panel */
+  }
+
+  /* Reveal animation for the answer container */
+  .reveal{ opacity:0; clip-path: circle(0 at 50% 0);
+    transition: opacity .45s var(--ease), clip-path .65s var(--ease); }
+  .reveal.visible{ opacity:1; clip-path: circle(150% at 50% 0); }
+
+  .answer{
+    white-space:pre-wrap;
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:var(--r);
+    padding:16px;
+  }
+  .sources{ margin-top:10px; color:var(--muted); font-size:14px }
+  .source{ padding:8px 0; border-bottom:1px solid rgba(255,255,255,.08) }
+  .source:last-child{ border-bottom:none }
+  .source a{ color:#64d2ff; text-decoration:none }
+  .source a:hover{ text-decoration:underline }
+
+  /* gear + modal */
+  .gear{ position:fixed; top:18px; right:18px; z-index:10; cursor:pointer; opacity:.85; transition:opacity .2s }
+  .gear:hover{ opacity:1 }
+  .gear svg{ width:22px; height:22px; color:#fff }
+  .backdrop{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.4); backdrop-filter:blur(4px); z-index:9 }
+  .backdrop.show{ display:flex }
+  .modal{ background:var(--panel-bg); backdrop-filter:var(--blur); border:1px solid rgba(255,255,255,.08); border-radius:var(--r);
+    padding:18px; min-width:300px; transform:scale(.95); opacity:0; transition:transform .28s var(--ease), opacity .28s var(--ease) }
+  .modal.open{ transform:scale(1); opacity:1 }
+  .modal h3{ margin:0 0 10px 0; font-size:16px }
+  .modal label{ display:block; margin:10px 0; color:var(--muted) }
+  .modal input[type="range"]{ width:100% }
+</style>
+</head>
+<body>
+
+<!-- settings -->
+<button class="gear" id="gear" aria-label="Settings">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.042c1.493-.862 3.257.902 2.395 2.395a1.724 1.724 0 001.042 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.042 2.573c.862 1.493-.902 3.257-2.395 2.395a1.724 1.724 0 00-2.573 1.042c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.042c-1.493.862-3.257-.902-2.395-2.395a1.724 1.724 0 00-1.042-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 00-1.042 2.573c-.862 1.493.902-3.257 2.395-2.395.708.408 1.607.254 2.073-.387z"/>
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+  </svg>
+</button>
+
+<div class="stage" id="stage">
+  <!-- floating input panel -->
+  <section class="panel" id="panel">
+    <div class="input-wrap" id="input-wrap">
+      <textarea id="prompt" placeholder="Type your prompt..."></textarea>
+      <button class="submit" id="submit" aria-label="Submit">
+        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+  </section>
+</div>
+
+<!-- answer/content in NORMAL FLOW, anchored under panel via margin-top calc -->
+<div class="content" id="content">
+  <div class="reveal" id="reveal">
+    <div class="answer" id="answer" aria-live="polite"></div>
+    <div class="sources" id="sources"></div>
+  </div>
+</div>
+
+<!-- modal -->
+<div class="backdrop" id="backdrop">
+  <div class="modal" id="modal">
+    <h3>Advanced settings</h3>
+    <label>Top-K <input id="topk" type="range" min="1" max="10" value="5"></label>
+    <label><input id="cite" type="checkbox" checked> Cite sources</label>
+  </div>
+</div>
+
+<script>
+  const STREAM_URL = "http://localhost:8000/api/rag/stream";
+
+  const stage     = document.getElementById('stage');   // NEW: stage ref
+  const panel     = document.getElementById('panel');
+  const inputWrap = document.getElementById('input-wrap');
+  const promptEl  = document.getElementById('prompt');
+  const submitEl  = document.getElementById('submit');
+
+  const reveal    = document.getElementById('reveal');
+  const answerEl  = document.getElementById('answer');
+  const sourcesEl = document.getElementById('sources');
+
+  const gear      = document.getElementById('gear');
+  const backdrop  = document.getElementById('backdrop');
+  const modal     = document.getElementById('modal');
+  const topkEl    = document.getElementById('topk');
+  const citeEl    = document.getElementById('cite');
+
+  let panelDocked = false;
+
+  // Focus + textarea autosize
+  promptEl.focus();
+  inputWrap.addEventListener('click', ()=> promptEl.focus());
+
+  function setPanelHeightVar(){
+    const rect = panel.getBoundingClientRect();
+    document.documentElement.style.setProperty('--panelHeight', rect.height + 'px');
+  }
+
+  function adjustTextarea(){
+    promptEl.style.height='auto';
+    const max=220, h=Math.min(promptEl.scrollHeight, max);
+    promptEl.style.height = h+'px';
+    if (promptEl.scrollHeight>max) promptEl.classList.add('show-scroll');
+    else promptEl.classList.remove('show-scroll');
+    if (panelDocked) setPanelHeightVar(); // keep margin under panel accurate as the input grows
+  }
+
+  function toggleSubmit(){
+    const hasText = promptEl.value.trim().length>0;
+    submitEl.classList.toggle('visible', hasText);
+    submitEl.disabled = !hasText;
+  }
+
+  adjustTextarea(); toggleSubmit();
+  promptEl.addEventListener('input', ()=>{ adjustTextarea(); toggleSubmit(); });
+
+  // Enter = submit; Shift+Enter = newline
+  promptEl.addEventListener('keydown', (e)=>{
+    if (e.key==='Enter' && !e.shiftKey){
+      e.preventDefault();
+      if (promptEl.value.trim()) startStreaming();
+    }
+  });
+  submitEl.addEventListener('click', ()=>{ if (promptEl.value.trim()) startStreaming(); });
+
+  function dockOnce(){
+    if (panelDocked) return;
+    setPanelHeightVar();                 // 1) measure current panel height
+    panel.classList.add('docked');       // 2) dock it (fixed at top)
+    stage.classList.add('collapsed');    // 3) collapse stage so content rises under panel
+    panelDocked = true;
+
+    // 4) ensure the viewport is at the very top so answer starts on-screen
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }
+
+  async function startStreaming(){
+    dockOnce();
+
+    // reset + reveal; answer starts right below panel (margin does the anchoring)
+    answerEl.textContent = '';
+    sourcesEl.innerHTML  = '';
+    reveal.classList.remove('visible');
+
+    // force top before we start writing
+    window.scrollTo(0, 0);
+
+    requestAnimationFrame(()=>{
+      reveal.classList.add('visible');
+      window.scrollTo(0, 0);
+    });
+
+    // payload
+    const payload = {
+      query: promptEl.value.trim(),
+      top_k: parseInt(topkEl?.value || '5', 10),
+      cite_sources: (citeEl?.checked !== false)
+    };
+
+    try{
+      const res = await fetch(STREAM_URL, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
+
+      const reader  = res.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buffer='';
+
+      while (true){
+        const {value, done} = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, {stream:true});
+        const parts = buffer.split('\n\n');
+        buffer = parts.pop() || '';
+
+        for (const raw of parts){
+          const lines = raw.split('\n');
+          let ev=null, data='';
+          for (const line of lines){
+            if (line.startsWith('event:')) ev = line.slice(6).trim();
+            if (line.startsWith('data:'))  data += line.slice(5).trim();
+          }
+          if (!data) continue;
+          try{
+            const payload = JSON.parse(data);
+            if (!ev){
+              if (payload.delta){
+                answerEl.textContent += payload.delta; // grows downward in normal flow
+              }
+            } else if (ev === 'sources' && Array.isArray(payload.sources)){
+              sourcesEl.innerHTML = payload.sources.map(s => `
+                <div class="source">
+                  <a href="${s.url || '#'}" target="_blank" rel="noreferrer">
+                    ${s.title || s.doc_id || 'Source'}
+                  </a>${s.snippet ? ` — ${s.snippet}` : ''}
+                </div>`).join('');
+            }
+          }catch(_){}
+        }
+      }
+      panel.classList.remove('responding');
+    }catch(err){
+      panel.classList.remove('responding');
+      panel.classList.add('error');
+      setTimeout(()=> panel.classList.remove('error'), 1800);
+      reveal.classList.add('visible');
+      answerEl.textContent = 'Error: ' + (err?.message || err);
+    }
+  }
+
+  // keep margin under panel correct if window resizes or textarea height changes after docking
+  window.addEventListener('resize', ()=>{ if (panelDocked) setPanelHeightVar(); });
+
+  /* subtle glow state toggles */
+  function setResponding(on){
+    panel.classList.toggle('responding', !!on);
+    panel.classList.toggle('error', false);
+  }
+
+  /* settings modal */
+  gear.addEventListener('click', ()=>{
+    backdrop.classList.add('show');
+    requestAnimationFrame(()=> modal.classList.add('open'));
+  });
+  backdrop.addEventListener('click', (e)=>{
+    if (e.target === backdrop){
+      modal.classList.remove('open');
+      setTimeout(()=> backdrop.classList.remove('show'), 280);
+    }
+  });
+  document.addEventListener('keydown', (e)=>{
+    if (e.key==='Escape' && backdrop.classList.contains('show')){
+      modal.classList.remove('open');
+      setTimeout(()=> backdrop.classList.remove('show'), 280);
+    }
+  });
+</script>
+</body>
+</html>
