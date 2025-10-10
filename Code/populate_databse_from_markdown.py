@@ -88,8 +88,11 @@ def add_to_chroma(chunks: list[Document], model_name: str):
     # Make DB folder specific to the embedding model
     model_db_path = os.path.join(CHROMA_PATH, model_name.replace(":", "_"))
 
+    # Include model name in collection_name
+    collection_name = f"ADLM_Embeddings_{model_name.replace(':', '_')}"
+
     db = Chroma(
-        collection_name="ADLM_Embeddings",
+        collection_name=collection_name,
         persist_directory=model_db_path,
         embedding_function=get_embedding_function(model_name)
     )
@@ -140,3 +143,4 @@ if __name__ == "__main__":
 
 # EXAMPLE USAGE
 # python .\py\populate_database_from_markdown.py --model llama3.1
+# python .\py\populate_database_from_markdown.py --model nomic-embed-text
