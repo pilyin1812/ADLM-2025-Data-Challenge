@@ -1,6 +1,7 @@
 Markdown Output/
 LabDocs/
-*.md
+Markdown-Output/
+Markdown-Output-Sample/
 chroma/
 *.csv
 .vscode
