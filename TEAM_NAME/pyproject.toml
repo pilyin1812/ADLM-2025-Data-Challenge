@@ -1,0 +1,18 @@
+[project]
+name = "team-name"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "langchain>=0.3.27",
+    "langchain-chroma>=0.2.6",
+    "langchain-community>=0.3.31",
+    "langchain-ollama>=0.3.10",
+    "markdown>=3.9",
+    "pymupdf4llm>=0.0.27",
+    "pypdfium2>=4.30.0",
+    "pytesseract>=0.3.13",
+    "streamlit>=1.50.0",
+    "unstructured>=0.18.15",
+]

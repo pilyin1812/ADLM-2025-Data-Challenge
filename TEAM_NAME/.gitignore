@@ -1,0 +1,8 @@
+Markdown Output/
+LabDocs/
+*.md
+chroma/
+*.csv
+.vscode
+/.vscode
+__pycache__/
