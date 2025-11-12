@@ -15,7 +15,6 @@ dependencies = [
     "langchain-ollama>=0.3.10",
     "langchain-text-splitters>=0.3.11",
     "markdown>=3.9",
-    "nvidia-pyindex>=1.0.9",
     "pip>=25.3",
     "pymupdf-layout>=1.26.6",
     "pymupdf4llm>=0.0.27",
