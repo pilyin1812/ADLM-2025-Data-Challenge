@@ -151,7 +151,6 @@ with st.sidebar:
     st.button("🌗 Toggle theme", use_container_width=True, on_click=toggle_theme)
 
 st.markdown("#### Clinical RAG — Notebook view")
-st.caption("Polished Streamlit frontend · Local backend hook")
 
 # ---------------- Chat Logic ----------------
 for msg in st.session_state.messages:
