@@ -224,7 +224,6 @@ def build_markdown_with_form(
 
     return "\n".join(p for p in md_parts if p.strip())
 
-
 # ---------- Main driver ----------
 def convert_pdf_to_markdown(pdf_path: str, output_md: str):
     client = get_client()
