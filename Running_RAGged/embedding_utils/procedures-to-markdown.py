@@ -73,8 +73,8 @@ def batch_convert_pdfs(pdf_dir: str, output_dir: str):
 # CHECK OUTPUT (uncomment to see example output for a file)
 
 # pdf_path = (
-#     "TEAM_NAME/LabDocs/Synthetic_Procedures/1_3-BETA-D-GLUCAN_FUNGITELL_SERUM.pdf"
-#     # "TEAM_NAME/LabDocs/Synthetic_Procedures/ZIKA_VIRUS_PCR_MOLECULAR_DETECTION_RANDOM_URINE.pdf"
+#     "Running_RAGged/LabDocs/Synthetic_Procedures/1_3-BETA-D-GLUCAN_FUNGITELL_SERUM.pdf"
+#     # "Running_RAGgedTEAM_NAME/LabDocs/Synthetic_Procedures/ZIKA_VIRUS_PCR_MOLECULAR_DETECTION_RANDOM_URINE.pdf"
 # )
 
 # md_text = pymupdf4llm.to_markdown(pdf_path)
@@ -90,6 +90,6 @@ def batch_convert_pdfs(pdf_dir: str, output_dir: str):
 
 # batch convert to markdownDocs/Synthetic_Procedures directory
 batch_convert_pdfs(
-    pdf_dir="TEAM_NAME/LabDocs/Synthetic_Procedures",
-    output_dir="TEAM_NAME/markdownDocs/Synthetic_Procedures"
+    pdf_dir="Running_RAGged/LabDocs/Synthetic_Procedures",
+    output_dir="Running_RAGged/markdownDocs/Synthetic_Procedures"
 )

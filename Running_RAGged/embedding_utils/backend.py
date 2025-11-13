@@ -7,14 +7,27 @@ from langchain_chroma import Chroma
 from langchain.prompts import ChatPromptTemplate
 from langchain_ollama import OllamaLLM
 from get_embedding_function import get_embedding_function
+import streamlit as st
 
 # ---- Hardcoded parameters ----
 CHROMA_PATH = "chroma/all-minilm"
 COLLECTION_NAME = "ADLM_Embeddings_all-minilm"
-LLM_MODEL = "llama3.1"
+LLM_MODEL = "gemma3"
 TOP_K = 5
 MAX_CONTEXT_CHARS = 100_000
 DOCS_DIR = "docs/Markdown-Output"
+
+# Serve that folder as static files
+st.markdown(
+    f"""
+    <script>
+    window.config = {{
+        baseUrl: '{DOCS_DIR}'
+    }}
+    </script>
+    """,
+    unsafe_allow_html=True,
+)
 
 PROMPT_TEMPLATE = """
 Answer the question using the context below if relevant.
@@ -38,11 +51,12 @@ Answer the question based on the above context: {question}
 #     Attach a local file path to the citation based on metadata.
 #     """
 #     return citation  # currently no-op
+
 """
 def find_relevant_files(citation: dict) -> dict:
-    
+
    # Attach a local file path to the citation based on metadata.
-    
+
     title = citation.get("title")
     if title:
         # Construct a likely filename (adjust extension if needed)
@@ -57,6 +71,7 @@ def find_relevant_files(citation: dict) -> dict:
             else:
                 citation["path"] = None
     return citation"""
+
 def _try_candidate(path: Optional[str]) -> Optional[str]:
     """
     Return the normalized absolute path if the given path exists on disk.

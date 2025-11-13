@@ -116,27 +116,11 @@ def render_relevant_documents_inline(relevant_documents: List[Dict]):
         if url:
             st.markdown(f"<a class='chip' href='{url}' target='_blank'>{label}</a>", unsafe_allow_html=True)
         elif path and os.path.exists(path):
-            # ✅ Create a clickable file:// link for local files
-            file_url = c.get("url")
-
-            # Build one manually if backend didn't provide it
-            if not file_url:
-                abs_path = os.path.abspath(path)
-                if os.name == "nt":
-                    file_url = "file:///" + abs_path.replace("\\", "/")
-                else:
-                    file_url = "file://" + abs_path
-
-            # Display both a button ("Open") and a clickable chip link
             cols = st.columns([1, 3])
             with cols[0]:
                 st.button("Open", key=f"open_{path}", on_click=open_local_file, args=(path,))
             with cols[1]:
-                st.markdown(
-                    f"<a class='chip' href='{file_url}' target='_blank'>{label}</a>",
-                    unsafe_allow_html=True,
-                )
-
+                st.markdown(f"<span class='chip'>{label}</span>", unsafe_allow_html=True)
         else:
             st.markdown(f"<span class='chip'>{label}</span>", unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
@@ -156,21 +140,11 @@ with st.sidebar:
             if url:
                 st.markdown(f"- [{title}]({url})  \n  <span class='tiny'>{meta}</span>", unsafe_allow_html=True)
             elif path and os.path.exists(path):
-                # ✅ Create a clickable file:// link for local files in the sidebar
-                abs_path = os.path.abspath(path)
-                if os.name == "nt":
-                    file_url = "file:///" + abs_path.replace("\\", "/")
-                else:
-                    file_url = "file://" + abs_path
-
                 cols = st.columns([1, 5])
                 with cols[0]:
                     st.button("Open", key=f"open_sidebar_{path}", on_click=open_local_file, args=(path,))
                 with cols[1]:
-                    st.markdown(
-                        f"[**{title}**]({file_url})  \n<span class='tiny'>{meta}</span>",
-                        unsafe_allow_html=True,
-                    )
+                    st.markdown(f"**{title}**  \n<span class='tiny'>{meta}</span>", unsafe_allow_html=True)
             else:
                 st.markdown(f"- **{title}**  \n  <span class='tiny'>{meta}</span>", unsafe_allow_html=True)
     st.markdown("---")
