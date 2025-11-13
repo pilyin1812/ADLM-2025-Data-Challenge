@@ -45,8 +45,8 @@ Using `QC-App.py`, we asked the same questions to each combination of embedding 
 
 -   Install UV if needed: `pip install uv`
 -   cd into the directory: `cd Running_RAGged`
+-   Synchronize local Python environment with project dependencies: `uv sync` (if you have SSL/TLS issues use `uv sync --native-tls`)
 -   activate the virtual env: `.venv\Scripts\activate` (optional: find the venv on your machine for interpreter if needed `dir .venv\Scripts\python.exe`)
--   install needed packages: `uv sync`
 
 ## Download companion files
 
