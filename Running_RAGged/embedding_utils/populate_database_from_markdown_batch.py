@@ -31,9 +31,7 @@ def _print_device_info():
         print("⚠️ Unable to detect GPU via nvidia-smi. Defaulting to CPU.")
 
 def chunk_documents_by_characters(documents: List[Document], chunk_size: int = CHAR_CHUNK_SIZE, overlap: int = CHAR_CHUNK_OVERLAP) -> List[Document]:
-    section_pattern = re.compile(
-        r"<!-- section: ([\w\-]+) \| source: ([\w\-.]+) -->"
-    )
+    section_pattern = re.compile(r"^##\s+(.*)$", re.M)
     all_chunks = []
 
     for doc in documents:
@@ -67,7 +65,7 @@ def chunk_documents_by_characters(documents: List[Document], chunk_size: int = C
             if match:
                 flush_chunk()
                 current_section = match.group(1)
-                current_source = match.group(2)
+                current_source = source
                 found_section = True
                 buffer.append(line)
                 char_count += len(line)
